@@ -1,4 +1,4 @@
-# Lab Rats
+# Lab Rats: The Quest for the Cosmic Cheese
 
 A super simple text-based adventure game inspired by https://matt.might.net/articles/make-a-text-game-with-generative-ai/ to demonstrate how to use the ChatGPT API.
 
