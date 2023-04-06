@@ -115,7 +115,8 @@ def get_next_action(messages):
     #    }
     #   ]
     # }
-
+    # The output is a dictionary, and you can extract the `content` value.
+    # This is just a normal string so you can process it however you'd like.
     return response["choices"][0]["message"]
 
 
