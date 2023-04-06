@@ -1,8 +1,12 @@
+# File: game.py
+# Inspired by: https://matt.might.net/articles/make-a-text-game-with-generative-ai/
+
 import openai
 import os
 
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
+# thanks gpt4
 LORE = """
 In the year 3030, Earth has become a hub of scientific research and collaboration. \
 A group of young and eccentric researchers, known as the "Lab Rats," dedicate their \
@@ -39,30 +43,45 @@ Get ready to embark on the cheesiest adventure of a lifetime!
 """
 
 
-def get_system_instruction():
-    """
-    The system instruction in an OpenAPI call helps set the behavior of the system.
-    In this case, we initialize with instructions for the game.
-    """
-    sys_instr = (
-        f"{LORE}"
-        "You will simulate a text-based game based on the lore above. "
-        "You understand at least these commands, and you may add more:\n"
-        "When I type the command /mod <instruction>, break out of the game and execute "
-        " its input as a high level instruction that may modify the state of the game. "
-        "When I type the command /help, show me a list of available commands.\n"
-        "When I type the command /look, describe the environment I'm in.\n"
-        "When I type the command /inventory, describe the contents of my inventory.\n"
-        "When I type the command /look <object>, describe the object.\n"
-        "After every command, display a list of actions I can take."
-    )
-    return sys_instr
+def game():
+    # Right now, the cheapest and best way to interact with the API is through
+    # OpenAI's `ChatCompletion` API, which is initialized with a series of messages.
+    # The first message in the system instruction, which describes the behavior of the
+    # assistant. There are two ways to proceed:
+    # 1) If you want normal completion that isn't dependent on previous messages, you
+    #    can just pass in a single user message along with the system instruction.
+    # 2) If your app requires state that's dependent on previous messages sent, you can
+    #    pass in a list of messages. We're doing this here to simulate a game.
+    messages = [
+        {"role": "system", "content": get_system_instruction()},
+        {
+            "role": "user",
+            "content": "The game has started. Explain the game like a storyteller and \
+                provide a tutorial on how to play",
+        },
+    ]
+
+    start_action = get_next_action(messages)
+    print(start_action["content"])
+    messages.append(start_action)
+
+    while True:
+        user_action = input("\nYour action> ")
+        messages.append({"role": "user", "content": user_action})
+        if user_action == "/quit":
+            break
+        next_action = get_next_action(messages)
+        print(next_action["content"])
+        messages.append(next_action)
 
 
 def get_next_action(messages):
     """
     This function takes in the user prompt and returns the next action.
     """
+    # This is the ChatCompletion API call.
+    # You can find documentation at:
+    # https://platform.openai.com/docs/api-reference/completions/create
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=messages
@@ -70,6 +89,9 @@ def get_next_action(messages):
         #   temperature: higher values will result in more creative responses
         #   max_tokens: the maximum number of tokens to return
         #   top_p: only consider results with cumulative probability of top_p
+        #   frequency_penalty: "Positive values penalize new tokens based on their
+        #                       existing frequency in the text so far, decreasing the
+        #                       model's likelihood to repeat the same line verbatim."
     )
 
     # The API response will have the following schema:
@@ -97,28 +119,24 @@ def get_next_action(messages):
     return response["choices"][0]["message"]
 
 
-def game():
-    messages = [
-        {"role": "system", "content": get_system_instruction()},
-        {
-            "role": "user",
-            "content": "The game has started. Explain the game like a storyteller and \
-                provide a tutorial on how to play",
-        },
-    ]
-
-    start_action = get_next_action(messages)
-    print(start_action["content"])
-    messages.append(start_action)
-
-    while True:
-        user_action = input("\nYour action> ")
-        messages.append({"role": "user", "content": user_action})
-        if user_action == "/quit":
-            break
-        next_action = get_next_action(messages)
-        print(next_action["content"])
-        messages.append(next_action)
+def get_system_instruction():
+    """
+    The system instruction in an OpenAPI call helps set the behavior of the system.
+    In this case, we initialize with instructions for the game.
+    """
+    sys_instr = (
+        f"{LORE}"
+        "You will simulate a text-based game based on the lore above. "
+        "You understand at least these commands, and you may add more:\n"
+        "When I type the command /mod <instruction>, break out of the game and execute "
+        " its input as a high level instruction that may modify the state of the game. "
+        "When I type the command /help, show me a list of available commands.\n"
+        "When I type the command /look, describe the environment I'm in.\n"
+        "When I type the command /inventory, describe the contents of my inventory.\n"
+        "When I type the command /look <object>, describe the object.\n"
+        "After every command, display a list of actions I can take."
+    )
+    return sys_instr
 
 
 if __name__ == "__main__":
